@@ -12,6 +12,7 @@ class Piece:
         self.type = type
         self.value = value
         self.status = True
+        self.valid_moves = []
         image_path = os.path.join('assets', f'{color}_{type}.png')
         try:
             self.img = pygame.image.load(image_path)
@@ -44,6 +45,7 @@ class Piece:
             if not board._is_in_check(self.color):
                 valid_moves.append(move)
             self.revert_move(board, original_pos, move, captured_piece)
+        self.valid_moves = valid_moves
         return valid_moves
 
     def revert_move(self, board, original_pos, new_pos, captured_piece):

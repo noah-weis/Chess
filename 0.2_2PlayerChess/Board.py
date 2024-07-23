@@ -88,6 +88,7 @@ class Board:
         self.black_kingside_rook = None
         self.white_pieces = []
         self.black_pieces = []
+        self.pieces = []
         self.halfmove_clock = None
         self.fullmove_number = None
         self.en_passant_square = None
@@ -135,6 +136,7 @@ class Board:
                     type_name = key[char.upper()]
                     square.occupying_piece = create_piece((file, rank), color, type_name)
                     
+                    self.pieces.append(square.occupying_piece)
                     if color == 'white':
                         self.white_pieces.append(square.occupying_piece)
                         if type_name == "king":
@@ -177,6 +179,8 @@ class Board:
         if 'q' in castling_fen:
             self.black_king.moved = False
             self.black_queenside_rook.moved = False
+
+        self.assign_moves()
     
     def developer_debug(self):
         # Developer debug function
@@ -200,16 +204,16 @@ class Board:
                 if clicked_square.occupying_piece.color == self.turn:
                     self.select_piece(clicked_square)
         elif self.selected_piece.can_move(self, clicked_square.pos):
-            save = self.save_state()
-            self.selected_piece.move(self, clicked_square.pos)
-            if self._is_in_check(self.turn):
-                self.restore_state(save)
-                self.deselect_piece()
-                print("Invalid move: King is in check.")
-                return False
-            self.deselect_piece(False)
+            captured = self.selected_piece.move(self, clicked_square.pos)
+            if captured:
+                print(f"{captured.color} {captured.type} has been captured.")
             self.turn = 'white' if self.turn == 'black' else 'black'
             self.fullmove_number += 1
+            self.assign_moves()
+            self.deselect_piece()
+            checkmate = self.turn if self.in_checkmate(self.turn) else False
+            if checkmate:
+                return 'White' if checkmate == 'black' else 'Black'
             print("Piece moved successfully.")
         elif clicked_square.occupying_piece is self.selected_piece:
             self.deselect_piece()
@@ -218,8 +222,11 @@ class Board:
             if clicked_square.occupying_piece.color == self.turn:
                 self.select_piece(clicked_square)
         print(f"Current turn: {self.turn}")
-        return True
-    
+
+    def assign_moves(self):
+        for piece in self.pieces:
+            piece.get_valid_moves(self)
+
     def deselect_piece(self, message=True):
         self.selected_piece = None
         self.unhighlight()
@@ -227,7 +234,7 @@ class Board:
     
     def select_piece(self, clicked_square: Square):
         self.selected_piece = clicked_square.occupying_piece
-        self.highlighted = self.selected_piece.get_valid_moves(self)
+        self.highlighted = self.selected_piece.valid_moves
         self.highlighted.append(self.selected_piece.pos)
         print(f"Selected piece: {self.selected_piece} at position {self.selected_piece.pos}")
 
@@ -348,7 +355,7 @@ class Board:
         # heres the real test for checkmate
         for piece in self.get_allied_pieces(color):
             if piece.status:
-                if piece.get_valid_moves(self) != []:
+                if piece.valid_moves != []:
                     return False
         return True
 

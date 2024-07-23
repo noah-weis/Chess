@@ -27,7 +27,13 @@ def checkmate(color):
 	screen.blit(text, text_rect)
 	pygame.display.update()
 
-if __name__ == '__main__':
+def end_game(winner):
+	draw(screen)
+	checkmate(winner)
+	pygame.time.wait(8000)
+	return False
+
+def main():
 	running = True
 	pygame.display.set_caption(os.getcwd().split('/')[-1])
 	while running:
@@ -39,19 +45,14 @@ if __name__ == '__main__':
 			elif event.type == pygame.MOUSEBUTTONDOWN: 
        			# If the mouse is clicked
 				if event.button == 1:
-					board.handle_click(mx, my)
+					winner = board.handle_click(mx, my)
+					if winner:
+						running = end_game(winner)
 			elif event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_e:
 					board.developer_debug()
-		if board.in_checkmate('black'): # If black is in checkmate
-			draw(screen)
-			checkmate('White')
-			pygame.time.wait(8000)
-			running = False
-		elif board.in_checkmate('white'): # If white is in checkmate
-			draw(screen)
-			checkmate('Black')
-			pygame.time.wait(8000)
-			running = False
 		# Draw the board
 		draw(screen)
+
+if __name__ == "__main__":
+	main()
