@@ -48,9 +48,6 @@ def main():
 					winner = board.handle_click(mx, my)
 					if winner:
 						running = end_game(winner)
-			elif event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_e:
-					board.developer_debug()
 		# Draw the board
 		draw(screen)
 

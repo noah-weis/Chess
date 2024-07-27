@@ -42,7 +42,7 @@ class Piece:
 
         for move in potential_moves:
             captured_piece = self.move(board, move, real_move=False)
-            if not board._is_in_check(self.color):
+            if not board.in_check(self.color):
                 valid_moves.append(move)
             self.revert_move(board, original_pos, move, captured_piece)
         self.valid_moves = valid_moves

@@ -1,6 +1,5 @@
 """Board.py"""
 import pygame
-from typing import List
 from Pieces import Pawn, Rook, Knight, Bishop, Queen, King, Piece
 
 key = {
@@ -158,6 +157,7 @@ class Board:
                     
                     file += 1
         
+        # Set game state variables
         self.turn = "white" if active_color == 'w' else 'black'
         self.halfmove_clock = int(halfmove_clock)
         self.fullmove_number = int(fullmove_number)
@@ -181,14 +181,7 @@ class Board:
             self.black_queenside_rook.moved = False
 
         self.assign_moves()
-    
-    def developer_debug(self):
-        # Developer debug function
-        if self.selected_piece:
-            print(self.selected_piece.get_valid_moves(self))
-        print(f'white_check: {self._is_in_check("white")} black_check: {self._is_in_check("black")}')
-        print(f'white_king: {self.white_king.pos} black_king: {self.black_king.pos}')
-        print(self.generate_fen())
+
     
     def handle_click(self, mx, my):
         x = mx // self.tile_width
@@ -204,57 +197,62 @@ class Board:
                 if clicked_square.occupying_piece.color == self.turn:
                     self.select_piece(clicked_square)
         elif self.selected_piece.can_move(self, clicked_square.pos):
+            # Move the piece
             captured = self.selected_piece.move(self, clicked_square.pos)
             if captured:
                 print(f"{captured.color} {captured.type} has been captured.")
             self.turn = 'white' if self.turn == 'black' else 'black'
             self.fullmove_number += 1
-            self.assign_moves()
             self.deselect_piece()
+            self.assign_moves()
+
+            # Check for checkmate
             checkmate = self.turn if self.in_checkmate(self.turn) else False
             if checkmate:
                 return 'White' if checkmate == 'black' else 'Black'
-            print("Piece moved successfully.")
+            print("Piece moved.")
         elif clicked_square.occupying_piece is self.selected_piece:
             self.deselect_piece()
         elif clicked_square.occupying_piece is not None:
             self.deselect_piece()
             if clicked_square.occupying_piece.color == self.turn:
                 self.select_piece(clicked_square)
-        print(f"Current turn: {self.turn}")
+        print(f"Current turn: {self.turn}\n----------------------")
 
     def assign_moves(self):
         for piece in self.pieces:
             piece.get_valid_moves(self)
+        
+    def remove_piece(self, pos):
+        # Remove the piece at the given position
+        piece = self.get_piece(pos)
+        if piece is not None:
+            piece.status = False
+            if piece.color == 'white':
+                self.white_pieces.remove(piece)
+            else:
+                self.black_pieces.remove(piece)
+            self.pieces.remove(piece)
+            self.get_square(pos).occupying_piece = None
+            return piece
+        return None
 
-    def deselect_piece(self, message=True):
+    def deselect_piece(self, message=False):
         self.selected_piece = None
         self.unhighlight()
         if message: print("Deselected piece.")
     
-    def select_piece(self, clicked_square: Square):
+    def select_piece(self, clicked_square: Square, message=False):
         self.selected_piece = clicked_square.occupying_piece
         self.highlighted = self.selected_piece.valid_moves
         self.highlighted.append(self.selected_piece.pos)
-        print(f"Selected piece: {self.selected_piece} at position {self.selected_piece.pos}")
+        if message:
+            print(f"Selected piece: {self.selected_piece} at position {self.selected_piece.pos}")
 
     def unhighlight(self):
         for square in self.highlighted:
             self.get_square(square).highlight = False
         self.highlighted = []
-
-    def in_check(self, color, move: List[tuple] = None, save_state=None):
-        """
-        Check if the given color is in check. Optionally simulate a move before checking.
-        """
-
-        if move and save_state:
-            self.get_piece(move[0]).move(self, move[1], real_move=False)
-            check = self._is_in_check(color)
-            self.restore_state(save_state)
-            return check
-        else:
-            return self._is_in_check(color)
     
     def generate_fen(self):
         def get_piece_fen(piece):
@@ -322,7 +320,6 @@ class Board:
             "fen": self.generate_fen(),
             "selected_piece": selected_piece
         }
-    
 
     def restore_state(self, state):
         """
@@ -333,7 +330,7 @@ class Board:
         self.setup_board(self.config)
 
 
-    def _is_in_check(self, color):
+    def in_check(self, color):
         """
         Check if the king of the given color is in check.
         """
@@ -343,7 +340,7 @@ class Board:
 
     def in_checkmate(self, color):
         # these are just quick tests for efficiency because this function is called a lot
-        if not self._is_in_check(color):
+        if not self.in_check(color):
             return False
         if color == 'white':
             if self.white_king.get_valid_moves(self) != []:
