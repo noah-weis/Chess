@@ -180,7 +180,7 @@ class Board:
             self.black_king.moved = False
             self.black_queenside_rook.moved = False
 
-        self.assign_moves()
+        self.assign_moves(self.turn)
 
     
     def handle_click(self, mx, my):
@@ -189,10 +189,7 @@ class Board:
         print(f"Clicked coordinates: ({mx}, {my}) -> Board coordinates: ({x}, {y}) ({self.get_square((x, y)).coord})")
 
         clicked_square = self.get_square((x, y))
-        if clicked_square.occupying_piece:
-            print(f"Clicked piece: {clicked_square.occupying_piece}")
-        else:
-            print(f"Clicked piece: {clicked_square.occupying_piece}")
+        print(f"Clicked piece: {clicked_square.occupying_piece}")
 
         if self.selected_piece is None:
             if clicked_square.occupying_piece is not None:
@@ -206,7 +203,7 @@ class Board:
             self.turn = 'white' if self.turn == 'black' else 'black'
             self.fullmove_number += 1
             self.deselect_piece()
-            self.assign_moves()
+            self.assign_moves(self.turn)
             # Check for checkmate
             checkmate = self.turn if self.in_checkmate(self.turn) else False
             if checkmate:
@@ -220,11 +217,62 @@ class Board:
                 self.select_piece(clicked_square)
         print(f"Current turn: {self.turn}\n----------------------")
 
-    def assign_moves(self):
+    def clear_moves(self):
         for piece in self.pieces:
-            piece.get_valid_moves(self)
+            piece.legal_moves = []
+    
+    def find_squares_between(self, start, end):
+        # Find the squares between two positions
+        squares = []
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        if dx == 0:
+            for i in range(1, abs(dy)):
+                squares.append((start[0], start[1] + i * dy // abs(dy)))
+        elif dy == 0:
+            for i in range(1, abs(dx)):
+                squares.append((start[0] + i * dx // abs(dx), start[1]))
+        elif abs(dx) == abs(dy):
+            for i in range(1, abs(dx)):
+                squares.append((start[0] + i * dx // abs(dx), start[1] + i * dy // abs(dy)))
+        return squares
+
+    def assign_moves(self, color):
+        self.clear_moves()
+        attacking_pieces = []
+        attacked_squares = []
+        king_pos = self.get_king_pos(color)
+        for piece in self.get_opposing_pieces(color):
+            new_attacked_squares = piece.get_moves(self)
+            if king_pos in new_attacked_squares:
+                attacking_pieces.append(piece)
+            attacked_squares += piece.get_moves(self)
+        king = self.white_king if color == 'white' else self.black_king
+        king.legal_moves = [move for move in king.get_moves(self) if move not in attacked_squares]
+        if len(attacking_pieces) > 1:
+            return # double check - king has to move, can't block both checks with any 1 piece
+        elif len(attacking_pieces) == 1:
+            blocking_squares = self.find_squares_between(king_pos, attacking_pieces[0].pos)
+            for piece in self.get_allied_pieces(color):
+                if piece.type == 'king':
+                    continue
+                piece.legal_moves = [move for move in piece.get_moves(self) if move in blocking_squares]
+        else:
+            for piece in self.get_allied_pieces(color):
+                if piece.type == 'king':
+                    continue
+                piece.legal_moves = piece.get_moves(self)
         
-    def remove_piece(self, piece):
+    def pop_king(self, color):
+        # Get the king for the given color and remove it from the board
+        return self.remove_piece(self.white_king if color == 'white' else self.black_king, keep_pos=True)
+    
+    def add_king(self, color):
+        # Add the king for the given color back to the board
+        king = self.white_king if color == 'white' else self.black_king
+        self.add_piece(king, king.pos)
+        
+    def remove_piece(self, piece, keep_pos=False):
         # Remove the piece at the given position
         try:
             piece.status = False
@@ -233,7 +281,9 @@ class Board:
             else:
                 self.black_pieces.remove(piece)
             self.pieces.remove(piece)
-            piece.pos = None
+            self.get_square(piece.pos).occupying_piece = None
+            if not keep_pos:
+                piece.pos = None
         except:
             print(f"-------------------------------ALERT-------------------------------\n\t\t!!!  LOOK HERE YOU DUMBASS   !!!\nError when removing: {piece}\n-------------------------------ALERT-------------------------------") # this function is my achilles heel... let me be
             raise ValueError
@@ -256,9 +306,9 @@ class Board:
     
     def select_piece(self, clicked_square: Square, message=True):
         self.selected_piece = clicked_square.occupying_piece
-        self.highlighted = self.selected_piece.valid_moves
+        self.highlighted = self.selected_piece.legal_moves
         self.highlighted.append(self.selected_piece.pos)
-        if message: print(f"Selected piece: {self.selected_piece} at position {self.selected_piece.pos}")
+        if message: print(f"Selected piece: {self.selected_piece} at position {self.selected_piece.pos}\nLegal moves: {self.selected_piece.legal_moves}")
 
     def unhighlight(self):
         for square in self.highlighted:
@@ -354,16 +404,16 @@ class Board:
         if not self.in_check(color):
             return False
         if color == 'white':
-            if self.white_king.valid_moves != []:
+            if self.white_king.legal_moves != []:
                 return False
         else:
-            if self.black_king.valid_moves != []:
+            if self.black_king.legal_moves != []:
                 return False
         
         # heres the real test for checkmate
         for piece in self.get_allied_pieces(color):
             if piece.status:
-                if piece.valid_moves != []:
+                if piece.legal_moves != []:
                     return False
         return True
 

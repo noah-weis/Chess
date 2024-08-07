@@ -12,7 +12,8 @@ class Piece:
         self.type = type
         self.value = value
         self.status = True
-        self.valid_moves = []
+        self.psudo_legal_moves = []
+        self.legal_moves = []
         image_path = os.path.join('assets', f'{color}_{type}.png')
         try:
             self.img = pygame.image.load(image_path)
@@ -35,18 +36,19 @@ class Piece:
     def can_move(self, board: Board, new_pos: tuple):
         return new_pos in board.highlighted and new_pos != self.pos
     
-    def get_valid_moves(self, board) -> List[tuple]:
+    def get_legal_moves(self, board) -> List[tuple]:
+        # retired function
         original_pos = self.pos
-        valid_moves = []
+        legal_moves = []
         potential_moves = self.get_moves(board)
 
         for move in potential_moves:
             captured_piece = self.move(board, move, real_move=False)
             if not board.in_check(self.color):
-                valid_moves.append(move)
+                legal_moves.append(move)
             self.revert_move(board, original_pos, move, captured_piece)
-        self.valid_moves = valid_moves
-        return valid_moves
+        self.legal_moves = legal_moves
+        return legal_moves
 
     def revert_move(self, board, original_pos, new_pos, captured_piece):
         board.get_piece(new_pos).move(board, original_pos, real_move=False)
@@ -70,6 +72,7 @@ class Pawn(Piece):
     def get_moves(self, board: Board) -> List[tuple]:
         x, y = self.pos
         moves = []
+        king = board.pop_king("white" if self.color == "black" else "black")
         
         # move forward
         if board.in_bounds((x, y + self.direction)) and board.get_square((x, y + self.direction)).is_empty():
@@ -86,7 +89,8 @@ class Pawn(Piece):
                     moves.append((nx, ny))
         
         # TODO: En passant
-        
+        self.psudo_legal_moves = moves
+        board.add_king("white" if self.color == "black" else "black")
         return moves
     
     def move(self, board: Board, new_pos: tuple, real_move=True):
@@ -102,6 +106,7 @@ class Rook(Piece):
     def get_moves(self, board: Board) -> List[tuple]:
         x, y = self.pos
         moves = []
+        king = board.pop_king("white" if self.color == "black" else "black")
         
         # horizontal moves
         for i in range(x + 1, 8):
@@ -137,6 +142,8 @@ class Rook(Piece):
                     moves.append((x, i))
                 break
         
+        board.add_king("white" if self.color == "black" else "black")
+        self.psudo_legal_moves = moves
         return moves
     
     def move(self, board: Board, new_pos: tuple, real_move=True):
@@ -152,13 +159,16 @@ class Knight(Piece):
     def get_moves(self, board: Board) -> List[tuple]:
         x, y = self.pos
         moves = []
-        
+        board.pop_king("white" if self.color == "black" else "black")
+
         for dx, dy in [(1, 2), (1, -2), (-1, 2), (-1, -2), (2, 1), (2, -1), (-2, 1), (-2, -1)]:
             new_x, new_y = x + dx, y + dy
             if 0 <= new_x < 8 and 0 <= new_y < 8:
                 if board.get_piece((new_x, new_y)) == None or board.get_piece((new_x, new_y)).color != self.color:
                     moves.append((new_x, new_y))
         
+        board.add_king("white" if self.color == "black" else "black")
+        self.psudo_legal_moves = moves
         return moves
     
 
@@ -170,6 +180,7 @@ class Bishop(Piece):
     def get_moves(self, board: Board) -> List[tuple]:
         x, y = self.pos
         moves = []
+        board.pop_king("white" if self.color == "black" else "black")
         
         # diagonal moves
         for dx, dy in [(1, 1), (1, -1), (-1, 1), (-1, -1)]:
@@ -184,6 +195,8 @@ class Bishop(Piece):
                 new_x += dx
                 new_y += dy
         
+        board.add_king("white" if self.color == "black" else "black")
+        self.psudo_legal_moves = moves
         return moves
 
 class Queen(Piece):
@@ -196,6 +209,7 @@ class Queen(Piece):
         """
         x, y = self.pos
         moves = []
+        board.pop_king("white" if self.color == "black" else "black")
         
         # horizontal moves
         for i in range(x + 1, 8):
@@ -244,6 +258,8 @@ class Queen(Piece):
                 new_x += dx
                 new_y += dy
         
+        board.add_king("white" if self.color == "black" else "black")
+        self.psudo_legal_moves = moves
         return moves
 
 class King(Piece):
@@ -254,6 +270,7 @@ class King(Piece):
     def get_moves(self, board: Board) -> List[tuple]:
         x, y = self.pos
         moves = []
+        board.pop_king("white" if self.color == "black" else "black")
         
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
@@ -271,7 +288,9 @@ class King(Piece):
             # Queen side
             if board.get_piece((0, y))and board.get_piece((0, y)).type == "rook" and not board.get_piece((0, y)).moved and board.get_square((1, y)).is_empty() and board.get_square((2, y)).is_empty() and board.get_square((3, y)).is_empty() and board.get_piece((0, y)).color == self.color:
                 moves.append((2, y))
-
+        
+        board.add_king("white" if self.color == "black" else "black")
+        self.psudo_legal_moves = moves
         return moves
     
     def move(self, board: Board, new_pos: tuple, real_move=True):
