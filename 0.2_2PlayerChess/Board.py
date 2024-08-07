@@ -190,7 +190,9 @@ class Board:
 
         clicked_square = self.get_square((x, y))
         if clicked_square.occupying_piece:
-            print(f"Clicked piece: {clicked_square.occupying_piece.color} {clicked_square.occupying_piece.type}")
+            print(f"Clicked piece: {clicked_square.occupying_piece}")
+        else:
+            print(f"Clicked piece: {clicked_square.occupying_piece}")
 
         if self.selected_piece is None:
             if clicked_square.occupying_piece is not None:
@@ -200,12 +202,11 @@ class Board:
             # Move the piece
             captured = self.selected_piece.move(self, clicked_square.pos)
             if captured:
-                print(f"{captured.color} {captured.type} has been captured.")
+                print(f"{captured} has been captured.")
             self.turn = 'white' if self.turn == 'black' else 'black'
             self.fullmove_number += 1
             self.deselect_piece()
             self.assign_moves()
-
             # Check for checkmate
             checkmate = self.turn if self.in_checkmate(self.turn) else False
             if checkmate:
@@ -223,31 +224,41 @@ class Board:
         for piece in self.pieces:
             piece.get_valid_moves(self)
         
-    def remove_piece(self, pos):
+    def remove_piece(self, piece):
         # Remove the piece at the given position
-        piece = self.get_piece(pos)
-        if piece is not None:
+        try:
             piece.status = False
             if piece.color == 'white':
                 self.white_pieces.remove(piece)
             else:
                 self.black_pieces.remove(piece)
             self.pieces.remove(piece)
-            self.get_square(pos).occupying_piece = None
-            return piece
-        return None
+            piece.pos = None
+        except:
+            print(f"-------------------------------ALERT-------------------------------\n\t\t!!!  LOOK HERE YOU DUMBASS   !!!\nError when removing: {piece}\n-------------------------------ALERT-------------------------------") # this function is my achilles heel... let me be
+            raise ValueError
+        return piece
+    
+    def add_piece(self, piece, pos):
+        piece.status = True
+        if piece.color == "white":
+            self.white_pieces.append(piece)
+        else:
+            self.black_pieces.append(piece)
+        self.pieces.append(piece)
+        piece.pos = pos
+        self.get_square(pos).occupying_piece = piece
 
-    def deselect_piece(self, message=False):
+    def deselect_piece(self, message=True):
         self.selected_piece = None
         self.unhighlight()
         if message: print("Deselected piece.")
     
-    def select_piece(self, clicked_square: Square, message=False):
+    def select_piece(self, clicked_square: Square, message=True):
         self.selected_piece = clicked_square.occupying_piece
         self.highlighted = self.selected_piece.valid_moves
         self.highlighted.append(self.selected_piece.pos)
-        if message:
-            print(f"Selected piece: {self.selected_piece} at position {self.selected_piece.pos}")
+        if message: print(f"Selected piece: {self.selected_piece} at position {self.selected_piece.pos}")
 
     def unhighlight(self):
         for square in self.highlighted:
@@ -343,10 +354,10 @@ class Board:
         if not self.in_check(color):
             return False
         if color == 'white':
-            if self.white_king.get_valid_moves(self) != []:
+            if self.white_king.valid_moves != []:
                 return False
         else:
-            if self.black_king.get_valid_moves(self) != []:
+            if self.black_king.valid_moves != []:
                 return False
         
         # heres the real test for checkmate

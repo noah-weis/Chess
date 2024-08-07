@@ -3,6 +3,7 @@ import os
 from Board import Board
 
 pygame.init()
+clock = pygame.time.Clock()
 
 WINDOW_SIZE = (600, 600)
 screen = pygame.display.set_mode(WINDOW_SIZE)
@@ -35,6 +36,7 @@ def end_game(winner):
 
 def main():
 	running = True
+	clock.tick(60)
 	pygame.display.set_caption(os.getcwd().split('/')[-1])
 	while running:
 		mx, my = pygame.mouse.get_pos()

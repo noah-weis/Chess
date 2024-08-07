@@ -25,11 +25,11 @@ class Piece:
     
     def move(self, board: Board, new_pos: tuple, real_move=True):
         captured_piece = board.get_piece(new_pos)
-        board.get_square(((self.pos))).occupying_piece = None 
-        board.get_square(((new_pos))).occupying_piece = self
+        board.get_square(self.pos).occupying_piece = None 
+        board.get_square(new_pos).occupying_piece = self
         self.pos = new_pos
         if captured_piece:
-            captured_piece.status = False
+            board.remove_piece(captured_piece)
         return captured_piece
 
     def can_move(self, board: Board, new_pos: tuple):
@@ -49,12 +49,16 @@ class Piece:
         return valid_moves
 
     def revert_move(self, board, original_pos, new_pos, captured_piece):
-        board.get_square(((new_pos))).occupying_piece = captured_piece
-        board.get_square(((original_pos))).occupying_piece = self
-        self.pos = original_pos
+        board.get_piece(new_pos).move(board, original_pos, real_move=False)
         if captured_piece:
-            captured_piece.pos = new_pos
-            captured_piece.status = True
+            board.add_piece(captured_piece, new_pos)
+            
+
+    def __repr__(self) -> str:
+        return f"{self.color} {self.type} at {self.pos}"
+    
+    def __str__(self) -> str:
+        return repr(self)
     
 
 class Pawn(Piece):
