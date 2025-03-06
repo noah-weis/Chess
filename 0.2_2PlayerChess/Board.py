@@ -79,6 +79,7 @@ class Board:
         self.tile_height = height // 8
         self.selected_piece = None
         self.turn = 'white'
+        self.moves = []
         self.config = config
         self.white_king = None
         self.black_king = None
@@ -229,19 +230,11 @@ class Board:
                 if clicked_square.occupying_piece.color == self.turn:
                     self.select_piece(clicked_square)
         elif self.selected_piece.can_move(self, clicked_square.pos):
-            # Move the piece
-            captured = self.selected_piece.move(self, clicked_square.pos)
-            if captured:
-                print(f"{captured} at {clicked_square.pos} has been captured by {self.selected_piece}.")
-            self.turn = 'white' if self.turn == 'black' else 'black'
-            self.fullmove_number += 1
-            self.deselect_piece()
-            self.assign_moves(self.turn)
+            self.move_piece(clicked_square)
             # Check for checkmate
             checkmate = self.turn if self.in_checkmate(self.turn) else False
             if checkmate:
                 return 'White' if checkmate == 'black' else 'Black'
-            print("Piece moved.")
         elif clicked_square.occupying_piece is self.selected_piece:
             self.deselect_piece()
         elif clicked_square.occupying_piece is not None:
@@ -249,6 +242,26 @@ class Board:
             if clicked_square.occupying_piece.color == self.turn:
                 self.select_piece(clicked_square)
         print(f"Current turn: {self.turn}\n----------------------")
+    
+    def move_piece(self, clicked_square):
+        self.moves.append(self.generate_move(self.selected_piece, clicked_square.pos))
+        captured = self.selected_piece.move(self, clicked_square.pos)
+        if captured:
+            print(f"{captured} at {clicked_square.pos} has been captured by {self.selected_piece}.")
+        self.turn = 'white' if self.turn == 'black' else 'black'
+        self.fullmove_number += 1
+        self.deselect_piece()
+        self.assign_moves(self.turn)
+        print("Piece moved.")
+    
+    def generate_move(self, piece, new_pos):
+        move = {
+            "piece": piece,
+            "start": piece.pos,
+            "end": new_pos,
+            "captured": self.get_piece(new_pos),
+        }
+        return move
     
     def find_squares_between(self, start, end):
         # Find the squares between two positions, inclusive

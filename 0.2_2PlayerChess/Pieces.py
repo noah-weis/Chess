@@ -73,12 +73,23 @@ class Pawn(Piece):
                 if board.get_piece((nx, ny)).color != self.color:
                     moves.append((nx, ny))
         
-        # TODO: En passant
+        # En passant
+        if len(board.moves) > 0:
+            last_move = board.moves[-1]
+            if last_move["piece"].type == "pawn" and abs(last_move["start"][1] - last_move["end"][1]) == 2 and last_move["end"][0] == x + 1 and last_move["end"][1] == y:
+                moves.append((x + 1, y + self.direction))
+            elif last_move["piece"].type == "pawn" and abs(last_move["start"][1] - last_move["end"][1]) == 2 and last_move["end"][0] == x - 1 and last_move["end"][1] == y:
+                moves.append((x - 1, y + self.direction))
+        
         self.psudo_legal_moves = moves
         board.add_king("white" if self.color == "black" else "black")
         return moves
     
     def move(self, board: Board, new_pos: tuple, real_move=True):
+        # en passant
+        if abs(new_pos[0] - self.pos[0]) == 1 and board.get_square(new_pos).is_empty():
+            board.get_piece((new_pos[0], new_pos[1] - self.direction)).move(board, new_pos)
+
         if real_move:
             self.moved = True
         return super().move(board, new_pos)
