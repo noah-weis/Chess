@@ -35,27 +35,12 @@ class Piece:
 
     def can_move(self, board: Board, new_pos: tuple):
         return new_pos in board.highlighted and new_pos != self.pos
-    
-    def get_legal_moves(self, board) -> List[tuple]:
-        # retired function
-        original_pos = self.pos
-        legal_moves = []
-        potential_moves = self.get_moves(board)
-
-        for move in potential_moves:
-            captured_piece = self.move(board, move, real_move=False)
-            if not board.in_check(self.color):
-                legal_moves.append(move)
-            self.revert_move(board, original_pos, move, captured_piece)
-        self.legal_moves = legal_moves
-        return legal_moves
 
     def revert_move(self, board, original_pos, new_pos, captured_piece):
         board.get_piece(new_pos).move(board, original_pos, real_move=False)
         if captured_piece:
             board.add_piece(captured_piece, new_pos)
             
-
     def __repr__(self) -> str:
         return f"{self.color} {self.type} at {self.pos}"
     

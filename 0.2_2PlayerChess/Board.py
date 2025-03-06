@@ -1,6 +1,7 @@
 """Board.py"""
 import pygame
 from Pieces import Pawn, Rook, Knight, Bishop, Queen, King, Piece
+from typing import Tuple, List
 
 key = {
     'P': "pawn",
@@ -248,14 +249,10 @@ class Board:
             if clicked_square.occupying_piece.color == self.turn:
                 self.select_piece(clicked_square)
         print(f"Current turn: {self.turn}\n----------------------")
-
-    def clear_moves(self):
-        for piece in self.pieces:
-            piece.legal_moves = []
     
     def find_squares_between(self, start, end):
-        # Find the squares between two positions
-        squares = []
+        # Find the squares between two positions, inclusive
+        squares = [start, end]
         dx = end[0] - start[0]
         dy = end[1] - start[1]
         if dx == 0:
@@ -268,6 +265,10 @@ class Board:
             for i in range(1, abs(dx)):
                 squares.append((start[0] + i * dx // abs(dx), start[1] + i * dy // abs(dy)))
         return squares
+    
+    def clear_moves(self):
+        for piece in self.pieces:
+            piece.legal_moves = []
 
     def assign_moves(self, color):
         self.clear_moves()
