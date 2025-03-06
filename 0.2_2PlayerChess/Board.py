@@ -182,6 +182,38 @@ class Board:
 
         self.assign_moves(self.turn)
 
+    def developer_insight(self):
+        board_fen = self.generate_fen().split()[0]
+        
+    
+        # Initialize an empty list to store the rows
+        rows = []
+        
+        # Iterate over each row in the FEN board part
+        for row in board_fen.split('/'):
+            expanded_row = ''
+            for char in row:
+                if char.isdigit():
+                    expanded_row += ' ' * (int(char) * 3)  # Three spaces for each empty square
+                else:
+                    expanded_row += f' {char} '  # Center the piece in a 3-character wide space
+            # Add the expanded row to the list with padding for the last column
+            rows.append(expanded_row.rstrip().ljust(24))  # Ensure even spacing for the last column
+        
+        # Create the top and bottom border of the board
+        horizontal_border = '+---' * 8 + '+'
+        
+        # Assemble the full board with borders
+        board_with_borders = horizontal_border + '\n'
+        for row in rows:
+            # If the row is completely empty, ensure it's filled with spaces
+            if row.strip() == '':
+                row = ' ' * 24
+            board_with_borders += '|' + '|'.join(row[i:i+3] for i in range(0, len(row), 3)) + '|\n'
+            board_with_borders += horizontal_border + '\n'
+        
+        print(board_with_borders)
+
     
     def handle_click(self, mx, my):
         x = mx // self.tile_width
@@ -199,7 +231,7 @@ class Board:
             # Move the piece
             captured = self.selected_piece.move(self, clicked_square.pos)
             if captured:
-                print(f"{captured} has been captured.")
+                print(f"{captured} at {clicked_square.pos} has been captured by {self.selected_piece}.")
             self.turn = 'white' if self.turn == 'black' else 'black'
             self.fullmove_number += 1
             self.deselect_piece()
@@ -246,7 +278,7 @@ class Board:
             new_attacked_squares = piece.get_moves(self)
             if king_pos in new_attacked_squares:
                 attacking_pieces.append(piece)
-            attacked_squares += piece.get_moves(self)
+            attacked_squares += new_attacked_squares
         king = self.white_king if color == 'white' else self.black_king
         king.legal_moves = [move for move in king.get_moves(self) if move not in attacked_squares]
         if len(attacking_pieces) > 1:
@@ -288,7 +320,7 @@ class Board:
             print(f"-------------------------------ALERT-------------------------------\n\t\t!!!  LOOK HERE YOU DUMBASS   !!!\nError when removing: {piece}\n-------------------------------ALERT-------------------------------") # this function is my achilles heel... let me be
             raise ValueError
         return piece
-    
+
     def add_piece(self, piece, pos):
         piece.status = True
         if piece.color == "white":
@@ -303,7 +335,7 @@ class Board:
         self.selected_piece = None
         self.unhighlight()
         if message: print("Deselected piece.")
-    
+
     def select_piece(self, clicked_square: Square, message=True):
         self.selected_piece = clicked_square.occupying_piece
         self.highlighted = self.selected_piece.legal_moves
@@ -397,7 +429,7 @@ class Board:
         """
         king_pos = self.get_king_pos(color)
         opposing_pieces = self.get_opposing_pieces(color)
-        return any(king_pos in piece.get_moves(self) for piece in opposing_pieces if piece.status)
+        return any(king_pos in piece.legal_moves for piece in opposing_pieces if piece.status)
 
     def in_checkmate(self, color):
         # these are just quick tests for efficiency because this function is called a lot

@@ -26,11 +26,11 @@ class Piece:
     
     def move(self, board: Board, new_pos: tuple, real_move=True):
         captured_piece = board.get_piece(new_pos)
-        board.get_square(self.pos).occupying_piece = None 
-        board.get_square(new_pos).occupying_piece = self
-        self.pos = new_pos
         if captured_piece:
             board.remove_piece(captured_piece)
+        board.get_square(new_pos).occupying_piece = self
+        board.get_square(self.pos).occupying_piece = None
+        self.pos = new_pos
         return captured_piece
 
     def can_move(self, board: Board, new_pos: tuple):

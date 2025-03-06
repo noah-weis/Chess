@@ -50,6 +50,8 @@ def main():
 					winner = board.handle_click(mx, my)
 					if winner:
 						running = end_game(winner)
+				elif event.button == 2:
+					board.developer_insight()
 		# Draw the board
 		draw(screen)
 
