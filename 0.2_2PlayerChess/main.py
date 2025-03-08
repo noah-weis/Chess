@@ -5,10 +5,11 @@ from Board import Board
 pygame.init()
 clock = pygame.time.Clock()
 
+
 WINDOW_SIZE = (600, 600)
 screen = pygame.display.set_mode(WINDOW_SIZE)
 
-board = Board(WINDOW_SIZE[0], WINDOW_SIZE[1])
+board = Board(WINDOW_SIZE[0], WINDOW_SIZE[1], "rnbqkbnr/1pp1pppp/p7/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq e5 0 1")
 
 def draw(display):
 	display.fill('white')
@@ -50,7 +51,10 @@ def main():
 					winner = board.handle_click(mx, my)
 					if winner:
 						running = end_game(winner)
-				elif event.button == 2:
+			elif event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_ESCAPE:
+					running = False
+				elif event.key == pygame.K_i:
 					board.developer_insight()
 		# Draw the board
 		draw(screen)

@@ -2,6 +2,9 @@
 import pygame
 from Pieces import Pawn, Rook, Knight, Bishop, Queen, King, Piece
 from typing import Tuple, List
+import logging as log
+
+log.basicConfig(level=log.DEBUG)
 
 key = {
     'P': "pawn",
@@ -121,6 +124,7 @@ class Board:
         halfmove_clock = parsed_fen[4]
         fullmove_number = parsed_fen[5]
         rows = board_fen.split('/')
+
         
         for i, row in enumerate(rows):
             rank = i  # Adjusted for white pieces starting at rank 0
@@ -131,7 +135,6 @@ class Board:
                     for _ in range(int(char)):
                         square.occupying_piece = None
                         file += 1
-                        square = self.get_square((file, rank))
                 else:
                     color = 'white' if char.isupper() else 'black'
                     type_name = key[char.upper()]
@@ -168,6 +171,38 @@ class Board:
         else:
             self.en_passant_square = en_passant_fen
         
+        # en passant square
+        if self.en_passant_square:
+            # Convert FEN algebraic notation (e.g., "e5") to internal board coordinates.
+            file = ord(self.en_passant_square[0]) - ord('a')
+            # Use 8 - rank because row 0 corresponds to FEN rank 8.
+            ep_row = 8 - int(self.en_passant_square[1])
+
+            # Determine the color that just moved.
+            last_move_color = "black" if self.turn == "white" else "white"
+
+            if last_move_color == "black":
+                # For a black pawn, a double move from rank 7 to rank 5 becomes from (file, 1) to (file, 3).
+                pawn_start = (file, ep_row - 2)  # 3 - 2 = 1
+                pawn_final = (file-1, ep_row)        # 3
+            else:
+                # For a white pawn, a double move from rank 2 to rank 4 becomes from (file, 6) to (file, 4).
+                pawn_start = (file, ep_row + 2)
+                pawn_final = (file-1, ep_row)
+
+            # Get the pawn that supposedly double-moved.
+            pawn = self.get_piece(pawn_final)
+            log.debug(pawn_final)
+            if pawn and pawn.type == "pawn":
+                fake_move = {
+                    "piece": pawn,
+                    "start": pawn_start,
+                    "end": pawn_final,
+                    "captured": None,
+                }
+                self.moves.append(fake_move)
+
+        
         # Update castling rights
         if 'K' in castling_fen:
             self.white_king.moved = False
@@ -186,11 +221,14 @@ class Board:
 
     def developer_insight(self):
         board_fen = self.generate_fen().split()[0]
-        
+        print(f"FEN: {board_fen}")
+        print(f"moves: {self.moves}")
+        print(self)
     
+    def __str__(self):
         # Initialize an empty list to store the rows
         rows = []
-        
+        board_fen = self.generate_fen().split()[0]
         # Iterate over each row in the FEN board part
         for row in board_fen.split('/'):
             expanded_row = ''
@@ -214,8 +252,7 @@ class Board:
             board_with_borders += '|' + '|'.join(row[i:i+3] for i in range(0, len(row), 3)) + '|\n'
             board_with_borders += horizontal_border + '\n'
         
-        print(board_with_borders)
-
+        return board_with_borders
     
     def handle_click(self, mx, my):
         x = mx // self.tile_width
@@ -465,7 +502,8 @@ class Board:
 
     def get_square(self, pos):
         # Get the square object from the given position
-        return self.squares[pos[1] * 8 + pos[0]]
+        #log.debug(f"get_square({pos})")
+        return self.squares[pos[1] * 8 + pos[0]] 
     
     def in_bounds(self, pos):
         # Check if the given position is within the board bounds
