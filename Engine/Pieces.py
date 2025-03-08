@@ -20,6 +20,8 @@ class Piece:
         except FileNotFoundError:
             print(f"Image file not found: {image_path}")
             self.img = None 
+        if not self.img:
+            raise ValueError(f"Invalid image path: {image_path}")
 
     def get_value(self):
         return self.value
