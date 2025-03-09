@@ -1,7 +1,8 @@
 """Pieces.py"""
+from __future__ import annotations
 import pygame
 from typing import List
-import Board
+import Engine.board
 import os
 
 # Piece class
