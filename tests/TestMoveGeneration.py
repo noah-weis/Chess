@@ -4,8 +4,8 @@ given board states. The tests are separated into two classes: one for boards whe
 depth==1 (non-depth tests) and one for deeper tests.
 """
 
-import Engine.Board
-import Engine.Pieces
+import Engine.board as Board
+import Engine.pieces
 import unittest
 
 def draw_board(fen):
